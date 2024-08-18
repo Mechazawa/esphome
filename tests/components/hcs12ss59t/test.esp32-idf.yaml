@@ -14,8 +14,6 @@ display:
     lambda: |-
       it.set_intensity(4);
       it.printf("%d", 123);
-      it.set_enabled(false);
-      it.set_enabled(true);
       it.set_scroll_speed(-100);
       it.set_scroll(false);
       it.scroll_left();

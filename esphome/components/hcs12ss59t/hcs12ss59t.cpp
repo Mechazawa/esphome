@@ -22,27 +22,33 @@ void HCS12SS59TComponent::setup() {
   this->reset_pin_->setup();
   this->enable_pin_->setup();
 
+  this->spi_setup();
+
   this->reset_pin_->digital_write(true);
   this->enable_pin_->digital_write(true);
-  delayMicroseconds(1);
-
-  this->spi_setup();
-  this->initialised_ = true;
-
+  delayMicroseconds(8);
   this->enable_pin_->digital_write(false);
-  delay(1);
+  
   this->reset_pin_->digital_write(false);
   delayMicroseconds(1);
   this->reset_pin_->digital_write(true);
   delayMicroseconds(1);
 
-  this->send_command_(HCS12SS59T_REGISTER_DIGIT_COUNT, HCS12SS59T_NUMDIGITS);
+  this->enable();
 
-  this->set_intensity(this->intensity_);
+  this->initialised_ = true;
+
+  this->transfer_byte(HCS12SS59T_REGISTER_DIGIT_COUNT | HCS12SS59T_NUMDIGITS);
+  this->transfer_byte(HCS12SS59T_REGISTER_INTENSITY | this->intensity_);
+  this->transfer_byte(HCS12SS59T_REGISTER_LIGHTS | HCS12SS59T_LIGHT_NORMAL);
+
+  // this->set_intensity(this->intensity_);
+
+  this->disable();
 
   this->display();
 
-  this->print("Hello World");
+  // this->print("Hello World");
 }
 void HCS12SS59TComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "HCS12SS59T:");
@@ -117,10 +123,8 @@ void HCS12SS59TComponent::set_intensity(uint8_t intensity, uint8_t light) {
     return;
   }
 
-  // this->send_command_(HCS12SS59T_REGISTER_INTENSITY, clamp(intensity, (uint8_t) 0, (uint8_t) 15));
-  // this->send_command_(HCS12SS59T_REGISTER_LIGHTS, clamp(light, (uint8_t) 0, (uint8_t) 2));
-  this->send_command_(HCS12SS59T_REGISTER_INTENSITY, 13);
-  this->send_command_(HCS12SS59T_REGISTER_LIGHTS, 0);
+  this->send_command_(HCS12SS59T_REGISTER_INTENSITY, clamp(intensity, (uint8_t) 0, (uint8_t) 15));
+  this->send_command_(HCS12SS59T_REGISTER_LIGHTS, clamp(light, (uint8_t) 0, (uint8_t) 2));
 
   this->intensity_ = intensity;
 }
@@ -161,8 +165,6 @@ void HCS12SS59TComponent::set_scroll(bool enabled) {
 }
 void HCS12SS59TComponent::set_scroll_speed(uint32_t ms) {
   this->scroll_speed_ = ms;
-
-  this->set_scroll(ms > 0);
 }
 
 void HCS12SS59TComponent::set_enable_pin(GPIOPin *pin) { this->enable_pin_ = pin; }
